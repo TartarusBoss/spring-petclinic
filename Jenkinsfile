@@ -1,20 +1,20 @@
 pipeline {
-  agent any
-
-  environment {
-    DOCKERHUB_CREDENTIALS = 'dockerhub-creds'  // Tu ID de credenciales DockerHub en Jenkins
-    IMAGE_NAME = 'tartarusboss/spring-petclinic'  // Cambia "tuusuario" por tu usuario DockerHub
+  agent {
+    docker {
+      image 'docker:20.10.24' // imagen con docker client instalado
+      args '-v /var/run/docker.sock:/var/run/docker.sock'
+    }
   }
-
+  environment {
+    DOCKERHUB_CREDENTIALS = 'dockerhub-creds'
+    IMAGE_NAME = 'tartarusboss/spring-petclinic'
+  }
   stages {
     stage('Build Image') {
       steps {
-        script {
-          sh "docker build -t ${IMAGE_NAME}:latest ."
-        }
+        sh "docker build -t ${IMAGE_NAME}:latest ."
       }
     }
-
     stage('Login to DockerHub') {
       steps {
         script {
@@ -24,12 +24,9 @@ pipeline {
         }
       }
     }
-
     stage('Push Image') {
       steps {
-        script {
-          sh "docker push ${IMAGE_NAME}:latest"
-        }
+        sh "docker push ${IMAGE_NAME}:latest"
       }
     }
   }
