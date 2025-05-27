@@ -1,39 +1,36 @@
 pipeline {
-    agent any
+  agent any
 
-    environment {
-        IMAGE_NAME = 'tartarusboss/spring-petclinic'
+  environment {
+    DOCKERHUB_CREDENTIALS = 'dockerhub-creds'  // Tu ID de credenciales DockerHub en Jenkins
+    IMAGE_NAME = 'tartarusboss/spring-petclinic'  // Cambia "tuusuario" por tu usuario DockerHub
+  }
+
+  stages {
+    stage('Build Image') {
+      steps {
+        script {
+          sh "docker build -t ${IMAGE_NAME}:latest ."
+        }
+      }
     }
 
-    stages {
-        stage('Clone') {
-            steps {
-                git branch: 'main', url: 'https://github.com/TartarusBoss/spring-petclinic'
-            }
+    stage('Login to DockerHub') {
+      steps {
+        script {
+          docker.withRegistry('', DOCKERHUB_CREDENTIALS) {
+            echo 'Logged in to DockerHub'
+          }
         }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    docker.build("${IMAGE_NAME}:latest")
-                }
-            }
-        }
-
-        stage('Login to DockerHub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                }
-            }
-        }
-
-        stage('Push to DockerHub') {
-            steps {
-                script {
-                    docker.image("${IMAGE_NAME}:latest").push()
-                }
-            }
-        }
+      }
     }
+
+    stage('Push Image') {
+      steps {
+        script {
+          sh "docker push ${IMAGE_NAME}:latest"
+        }
+      }
+    }
+  }
 }
