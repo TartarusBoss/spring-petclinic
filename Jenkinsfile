@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub-creds') // Requiere que configures credencial en Jenkins
-        DOCKER_IMAGE = "tartarusboss/spring-petclinic"
+        DOCKER_HUB_CREDENTIALS = credentials('dockerhub-creds') // ID de las credenciales en Jenkins
+        DOCKER_IMAGE = "tartarusboss/spring-petclinic"          // Imagen a subir a DockerHub
     }
 
     stages {
         stage('Clonar código') {
             steps {
-                git 'https://github.com/TartarusBoss/spring-petclinic'
+                git branch: 'main', url: 'https://github.com/TartarusBoss/spring-petclinic'
             }
         }
 
