@@ -1,36 +1,39 @@
 pipeline {
-    agent {
-        docker {
-            image 'docker:24.0.7-cli' // Imagen con Docker CLI
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent any
 
     environment {
-        IMAGE_NAME = "tartarusboss/spring-petclinic"
+        DOCKER_HUB_CREDENTIALS = credentials('dockerhub-creds') // Requiere que configures credencial en Jenkins
+        DOCKER_IMAGE = "tartarusboss/spring-petclinic"
     }
 
     stages {
-        stage('Build') {
+        stage('Clonar código') {
+            steps {
+                git 'https://github.com/TartarusBoss/spring-petclinic'
+            }
+        }
+
+        stage('Compilar') {
             steps {
                 sh './mvnw clean package -DskipTests'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Construir imagen Docker') {
             steps {
-                sh 'docker build -t $IMAGE_NAME .'
+                sh "docker build -t $DOCKER_IMAGE ."
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Login DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push $IMAGE_NAME
-                    """
-                }
+                sh "echo $DOCKER_HUB_CREDENTIALS_PSW | docker login -u $DOCKER_HUB_CREDENTIALS_USR --password-stdin"
+            }
+        }
+
+        stage('Publicar en DockerHub') {
+            steps {
+                sh "docker push $DOCKER_IMAGE"
             }
         }
     }
