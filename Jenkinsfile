@@ -1,65 +1,44 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'docker:24.0.5-cli'  // Imagen oficial de Docker CLI
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
+
+    environment {
+        DOCKER_BUILDKIT = '1'
+    }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Verificar Docker') {
             steps {
-                checkout scm
+                echo 'Mostrando versión de Docker'
+                sh 'docker version'
+
+                echo 'Listando contenedores activos'
+                sh 'docker ps'
             }
         }
 
-        stage('Build') {
+        stage('Construir imagen') {
             steps {
-                sh './mvnw clean package -DskipTests'
+                echo 'Construyendo imagen Docker personalizada'
+                sh 'docker build -t mi-imagen:latest .'
             }
         }
 
-        stage('Docker Build') {
+        stage('Ejecutar contenedor') {
             steps {
-                script {
-                    // Verifica si docker está disponible
-                    def dockerAvailable = sh(script: 'which docker', returnStatus: true) == 0
-                    if (dockerAvailable) {
-                        sh 'docker build -t myapp:latest .'
-                    } else {
-                        echo 'Docker no está disponible, se salta Docker Build'
-                    }
-                }
-            }
-        }
-
-        stage('Docker Login') {
-            when {
-                expression {
-                    sh(script: 'which docker', returnStatus: true) == 0
-                }
-            }
-            steps {
-                // Añade aquí login docker, solo si docker está disponible
-                echo 'Haciendo login en Docker...'
-                // sh 'docker login ...'
-            }
-        }
-
-        stage('Docker Push') {
-            when {
-                expression {
-                    sh(script: 'which docker', returnStatus: true) == 0
-                }
-            }
-            steps {
-                echo 'Haciendo push de la imagen Docker...'
-                // sh 'docker push myapp:latest'
+                echo 'Ejecutando contenedor desde la imagen construida'
+                sh 'docker run --rm mi-imagen:latest'
             }
         }
     }
 
     post {
         always {
-            echo 'Build finalizado'
-        }
-        failure {
-            echo 'Build falló!'
+            echo 'Pipeline finalizado'
         }
     }
 }
